@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
+const getSupabase = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
@@ -12,8 +12,15 @@ export default function Home() {
   const [items, setItems] = useState([]);
   const [textInput, setTextInput] = useState('');
 
+  const fetchItems = async () => {
+    const supabase = getSupabase();
+    const { data } = await supabase.from('clipboard').select('*').order('created_at', { ascending: false });
+    if (data) setItems(data);
+  };
+
   useEffect(() => {
     fetchItems();
+    const supabase = getSupabase();
     const channel = supabase.channel('realtime clipboard')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'clipboard' }, (payload) => {
         setItems((prev) => [payload.new, ...prev]);
@@ -22,13 +29,9 @@ export default function Home() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const fetchItems = async () => {
-    const { data } = await supabase.from('clipboard').select('*').order('created_at', { ascending: false });
-    if (data) setItems(data);
-  };
-
   const sendTextToPhone = async () => {
     if (!textInput) return;
+    const supabase = getSupabase();
     await supabase.from('clipboard').insert([{ item_type: 'text', content: textInput }]);
     
     // Sends LINE notification to your phone
