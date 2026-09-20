@@ -1,11 +1,10 @@
 // @ts-nocheck
 import { NextResponse } from 'next/server';
-import { Client } from '@line/bot-sdk';
+import * as line from '@line/bot-sdk';
 import { createClient } from '@supabase/supabase-js';
 
-const client = new Client({
+const blobClient = new line.messagingApi.MessagingApiBlobClient({
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN!,
-  channelSecret: process.env.LINE_CHANNEL_SECRET!,
 });
 
 const supabase = createClient(
@@ -30,7 +29,7 @@ export async function POST(req: Request) {
         ]);
       } else if (event.message.type === 'image' || event.message.type === 'file') {
         // Handle Image or File Upload
-        const stream = await client.getMessageContent(event.message.id);
+        const stream = await blobClient.getMessageContent(event.message.id);
         const chunks = [];
         for await (const chunk of stream) {
           chunks.push(chunk);
